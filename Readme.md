@@ -2,5 +2,6 @@
 
 # Инструмент
 
-JetBrains Writeside v 1213
+
+JetBrains Writeside v 1.102002.213
 буль буль
