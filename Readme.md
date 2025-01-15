@@ -2,4 +2,4 @@
 
 # Инструмент
 
-JetBrains Writeside
+JetBrains Writeside v 1.102002.213
