@@ -19,7 +19,10 @@
     </def>
 </deflist>
 
-Эта структура наследуется от интерфейса `IDisposable`, но клиенту обычно не нужно вызывать `Dispose()`.
+<note>
+Эта структура наследуется от интерфейса <code>IDisposable</code>,
+но клиенту обычно не нужно вызывать <code>Dispose</code>.
+</note>
 
 ## OutputPacket
 
