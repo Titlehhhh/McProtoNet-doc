@@ -4,11 +4,10 @@
 
 ## InputPacket
 
-Исходный код: [InputPacket.cs](https://github.com/Titlehhhh/McProtoNet/blob/dev/src/McProtoNet.Abstractions/InputPacket.cs)
-
 Структура, предназначенная для абстракции входящих данных пакета.
 Она абстрагирует как сжатые, так и несжатые данные, предоставляя удобный интерфейс для работы с пакетами из [протокола Minecraft](https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol#Packet_format).
 
+Исходный код: [InputPacket.cs](https://github.com/Titlehhhh/McProtoNet/blob/dev/src/McProtoNet.Abstractions/InputPacket.cs)
 
 <deflist>
     <def title="Id: int">
@@ -26,9 +25,9 @@
 
 ## OutputPacket
 
-Исходный код: [OutputPacket.cs](https://github.com/Titlehhhh/McProtoNet/blob/dev/src/McProtoNet.Abstractions/OutputPacket.cs)
-
 Структура, предназначенная для абстракции исходящих пакетов.
+
+Исходный код: [OutputPacket.cs](https://github.com/Titlehhhh/McProtoNet/blob/dev/src/McProtoNet.Abstractions/OutputPacket.cs)
 
 <warning>
 Эта структура наследует <code>IDisposable</code>, поэтому отправленные пакеты всегда нужно очищать.
