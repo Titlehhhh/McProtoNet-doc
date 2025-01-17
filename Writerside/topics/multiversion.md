@@ -138,10 +138,25 @@ public interface IClientPacket
 
 #### Пример: пакет `UnloadChunk`
 
-Пакет UnloadChunk содержит одинаковые поля для всех версий: координаты X и Z. Однако начиная с версии 764 порядок чтения этих полей изменился.
+Пакет UnloadChunk содержит одинаковые поля для всех версий: координаты X и Z. 
+Однако начиная с версии 764 порядок чтения этих полей изменился.
 
-<code-block lang="C#" collapsed-title="UnloadChunkPacket.cs" collapsible="true" src="../code-samples/UnloadChunkPacket.cs"/>
-
+<compare type="top-bottom" first-title="340-763" second-title="764-769">
+<code-block lang="C#"> 
+void Deserialize(...)
+{
+    ChunkX = reader.ReadSignedInt();
+    ChunkZ = reader.ReadSignedInt();
+}
+</code-block>
+<code-block lang="C#">
+void Deserialize(...)
+{
+    ChunkZ = reader.ReadSignedInt();
+    ChunkX = reader.ReadSignedInt();
+}
+</code-block>
+</compare>
 
 #### Структура словаря пакетов
 
@@ -260,4 +275,236 @@ if (client.TrySend<BlockPlacePacket.V477_758>(out var sender))
 
 ### Получение серверных пакетов
 
-С отправкой разобрались. 
+С отправкой разобрались, теперь посмотрим как обрабатывать пакеты от сервера.
+
+Но перед этим нужно импортировать необходимые пространства имён:
+
+```C#
+using McProtoNet.Protocol;
+using McProtoNet.Protocol.ClientboundPackets;
+```
+
+Допустим мы хотим читать пакет изменения позиции. 
+Этот пакет претерпевал множество изменений:
+
+<tabs>
+    <tab title="Общие поля">
+        <table>
+            <tr>
+                <td>Имя</td>
+                <td>Тип</td>
+            </tr>
+            <tr>
+                <td>X</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Y</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Z</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Yaw</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Pitch</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>TeleportId</td>
+                <td>VarInt</td>
+            </tr>
+        </table>
+    </tab>
+    <tab title="340-754">
+        <table>
+            <tr>
+                <td>Имя</td>
+                <td>Тип</td>
+            </tr>
+            <tr>
+                <td>X</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Y</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Z</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Yaw</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Pitch</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Flags</td>
+                <td>SByte</td>
+            </tr>
+            <tr>
+                <td>TeleportId</td>
+                <td>VarInt</td>
+            </tr>
+        </table>
+    </tab>
+    <tab title="755-761">
+        <table>
+            <tr>
+                <td>Имя</td>
+                <td>Тип</td>
+            </tr>
+            <tr>
+                <td>X</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Y</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Z</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Yaw</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Pitch</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Flags</td>
+                <td>SByte</td>
+            </tr>
+            <tr>
+                <td>TeleportId</td>
+                <td>VarInt</td>
+            </tr>
+            <tr>
+                <td>DismountVehicle</td>
+                <td>Boolean</td>
+            </tr>
+        </table>
+    </tab>
+    <tab title="762-767">
+        <table>
+            <tr>
+                <td>Имя</td>
+                <td>Тип</td>
+            </tr>
+            <tr>
+                <td>X</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Y</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Z</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Yaw</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Pitch</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Flags</td>
+                <td>SByte</td>
+            </tr>
+            <tr>
+                <td>TeleportId</td>
+                <td>VarInt</td>
+            </tr>
+        </table>
+    </tab>
+    <tab title="768-769">
+        <table>
+            <tr>
+                <td>Имя</td>
+                <td>Тип</td>
+            </tr>
+            <tr>
+                <td>TeleportId</td>
+                <td>VarInt</td>
+            </tr>
+            <tr>
+                <td>X</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Y</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Z</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Dx</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Dy</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Dz</td>
+                <td>Double</td>
+            </tr>
+            <tr>
+                <td>Yaw</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Pitch</td>
+                <td>Float</td>
+            </tr>
+            <tr>
+                <td>Flags</td>
+                <td>UInt</td>
+            </tr>
+        </table>
+    </tab>
+</tabs>
+
+Для получения конкретных пакетов можно воспользоваться методом расширения
+`OnPacket<T>(this MinecraftClient client,...)`. Этот метод возвращает 
+`IObservable<T>`, поэтому для удобной обработки следует установить библиотеку 
+[System.Reactive](https://github.com/dotnet/reactive).
+
+```C#
+client.OnPacket<PositionPacket>()
+    .Subscribe(p =>
+    {
+        Console.WriteLine($"X: {p.X}, Y: {p.Y}, Z: {p.Z}");
+    });
+```
+
+<warning>
+Метод <code>Subscribe</code> возвращает <code>IDisposable</code>, который представляет из
+себя токен отмены подписки. Если не отменить подписку, то произойдет утечка памяти.
+</warning>
+
+#### Получение пакета на конкретных версиях
+
+
+<compare type="top-bottom" first-title="Первый подход" second-title="Второй подход">
+<code-block lang="C#" src="../code-samples/OnPacketV1.cs"/>
+<code-block lang="C#" src="../code-samples/OnPacketV2.cs"/>
+</compare>
+
