@@ -94,7 +94,7 @@ UseItemPacket <-- V767_769
 @enduml
 ```
 
-## Сериализация пакета
+### Сериализация пакета
 
 Все классы реализуют интерфейс `IClientPacket`(для клиентских пакетов). 
 
@@ -120,5 +120,144 @@ public interface IClientPacket
 
 <code-block lang="C#" collapsed-title="UseItemPacket.cs" collapsible="true" src="../code-samples/UseItemPacket.cs"/>
 
-## Серверные пакеты
+### Серверные пакеты
 
+Серверные пакеты в McProtoNet спроектированы схожим образом:
+основной класс содержит общие поля, применимые ко всем версиям, а вложенные классы включают дополнительные поля, характерные для конкретных версий.
+
+Основной класс является абстрактным, тогда как вложенные классы — нет. При десериализации пакета метод вызывается у конкретного наследника, соответствующего текущей версии протокола.
+
+#### Как создаются серверные пакеты
+
+В отличие от отправки, при получении серверных пакетов McProtoNet самостоятельно создает экземпляры классов. Для этого используется словарь, где:
+
+- ключ — комбинация версии протокола и идентификатора пакета,
+- значение — фабричный метод, создающий экземпляр нужного класса.
+
+---
+
+#### Пример: пакет `UnloadChunk`
+
+Пакет UnloadChunk содержит одинаковые поля для всех версий: координаты X и Z. Однако начиная с версии 764 порядок чтения этих полей изменился.
+
+<code-block lang="C#" collapsed-title="UnloadChunkPacket.cs" collapsible="true" src="../code-samples/UnloadChunkPacket.cs"/>
+
+
+#### Структура словаря пакетов
+
+В словаре пакетов множество записей, каждая из которых сопоставляет комбинацию версии и идентификатора пакета фабричному методу. Для примера рассмотрим две записи:
+
+```C#
+{
+    Combine(351, 30),
+    UnloadChunkPacket_V340_763Factory
+}
+```
+
+```C#
+{
+    Combine(766, 33),
+    UnloadChunkPacket_V764_769Factory
+}
+```
+
+<note>
+Метод <code>Combine</code> принимает два 32-битных числа и преобразует их в 64-битное. Первые 32 бита — первое число, вторые 32 бита — второе.
+</note>
+
+---
+
+#### Как это работает
+
+- Если версия протокола равна **351**, а идентификатор пакета — **30**, вызывается фабрика `UnloadChunkPacket_V340_763Factory`, создающая экземпляр класса `UnloadChunkPacket.V340_763`.
+- Если версия протокола равна **766**, а идентификатор пакета — **33**, используется фабрика `UnloadChunkPacket_V764_769Factory` для создания экземпляра `UnloadChunkPacket.V764_769`.
+
+
+## Примеры кода
+
+Дабы глубже углубиться в идею мультиверсии, рассмотрим примеры кода.
+
+### Отправка пакетов
+
+Для работы с клиентскими пакетами в McProtoNet необходимо подключить соответствующие пространства имен. 
+
+Убедитесь, что в коде импортированы:
+
+```C#
+using McProtoNet.Protocol;
+using McProtoNet.Protocol.ServerboundPackets;
+```
+
+А также подключена библиотека:
+
+```xml
+<PackageReference Include="McProtoNet.Protocol" Version="XXX" />
+```
+
+#### Задача - отправить `BlockPlace` пакет
+
+Если нас не волнует версия, то можно сделать это так.
+
+```C#
+using McProtoNet;
+using McProtoNet.Client;
+using McProtoNet.Protocol;
+using McProtoNet.Protocol.ServerboundPackets;
+
+var client = new MinecraftClient
+{
+    //Initialize
+};
+var packet = new BlockPlacePacket
+{
+    CursorX = 1.0f,
+    CursorY = 2.0f,
+    CursorZ = 3.0f,
+    Direction = 4,
+    Hand = 5,
+    Location = new Position(6, 7, 8)
+};
+await client.SendPacket(packet);
+```
+
+В конце вызывается метод `SendPacket` - это метод расширения, который в 
+качестве параметра принимает экземпляр класса, реализующий `IClientPacket`.
+
+Если нас интересует конкретная версия, допустим, **477**, то можно
+сделать так:
+
+```C#
+var packet = new BlockPlacePacket.V477_758()
+{
+    CursorX = 1.0f,
+    CursorY = 2.0f,
+    CursorZ = 3.0f,
+    Direction = 4,
+    Hand = 5,
+    Location = new Position(6, 7, 8),
+    InsideBlock = true //Новое поле
+};
+await client.SendPacket(packet);
+```
+Но стоит быть осторожным, так как McProtoNet проверят, поддерживает ли этот пакет
+версию протокола на которой запущен клиент. Чтобы упростить это можно использовать
+метод расширения `TrySend`:
+
+```C#
+if (client.TrySend<BlockPlacePacket.V477_758>(out var sender))
+{
+    sender.Packet.CursorX = 1.0f;
+    sender.Packet.CursorY = 2.0f;
+    sender.Packet.CursorZ = 3.0f;
+    sender.Packet.Direction = 4;
+    sender.Packet.Hand = 5;
+    sender.Packet.Location = new Position(6, 7, 8);
+    sender.Packet.InsideBlock = true;
+
+    await sender.Send();
+}
+```
+
+### Получение серверных пакетов
+
+С отправкой разобрались. 
