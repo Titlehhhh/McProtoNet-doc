@@ -86,4 +86,4 @@ await sender.SendPacketAsync(data, cancellationToken: default(CancellationToken)
 
 ## Класс `MinecraftClient`
 
-Пространство имён `McProtoNet.Client` содержит класс `MinecraftClient`
+Пространство имён `McProtoNet.Client` содержит класс `MinecraftClient`, который
